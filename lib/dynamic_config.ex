@@ -137,4 +137,10 @@ defmodule DynamicConfig do
     :static
   end
 
+
+  def start(_type, _args) do
+    if Application.get_env(:dynamic_config, :reconfig_on_boot) do
+      dynamically_update_config()
+    end
+  end
 end
