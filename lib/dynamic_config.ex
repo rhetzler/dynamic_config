@@ -1,4 +1,6 @@
 defmodule DynamicConfig do
+  use DynamicConfig.BootPhase, skip_bootstrap: true
+
   @callback get_config(any) :: any
 
   @moduledoc """
@@ -48,13 +50,8 @@ defmodule DynamicConfig do
   ```
   defmodule MyApp do
     use Application
-
+    use DynamicConfig.BootPhase
     ...
-
-    def start_phase(:dynamic_config, _, _) do
-      DynamicConfig.dynamically_update_config()
-    end
-  end
   ```
 
   a dynamic configuration can take on any of the following three forms:
@@ -79,62 +76,7 @@ defmodule DynamicConfig do
 
   """
 
-  @doc """
-  Dynamically update the configuration. suitable for use at boot time
-
-  ## Examples
-
-      iex> DynamicConfig.dynamically_update_config()
-      :ok
-
-  """
-  def dynamically_update_config() do
-    Enum.each Application.loaded_applications(), fn {app, _, _} ->
-        Enum.each Application.get_all_env(app), fn {k, v} ->
-            case maybe_get_dynamic_config(v) do
-                {:ok, new_config} ->
-                    Application.put_env(app, k, new_config)
-                :static ->
-                    :noop
-            end
-        end
-    end
-    :ok
+  def start(_type, _args) do
+    DynamicConfig.Supervisor.start_link
   end
-
-  defp maybe_get_dynamic_config({mod, args}) when is_atom(mod) do
-    if :erlang.function_exported(mod, :get_config, 1) do
-        {:ok, mod.get_config(args)}
-    else
-        :static
-    end
-  end
-
-  # just in case we're Ecto and mix legit compile-time configs with dynamic configs,
-  # add the option to specify keyword list key `dynamic_config` to point to the module
-  # the existing keyword list will be passed in as the argument
-  defp maybe_get_dynamic_config(keywords) when is_list(keywords) do
-    if Keyword.keyword?(keywords) do
-      if Keyword.has_key?(keywords, :dynamic_config) do
-        {:ok, keywords[:dynamic_config].get_config(keywords)}
-      else
-        :static
-      end
-    else
-      :static
-    end
-  end
-
-  defp maybe_get_dynamic_config(mod) when is_atom(mod) do
-    if :erlang.function_exported(mod, :get_config, 1) do
-        {:ok, mod.get_config(nil)}
-    else
-        :static
-    end
-  end
-
-  defp maybe_get_dynamic_config(_) do
-    :static
-  end
-
 end

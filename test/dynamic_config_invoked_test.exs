@@ -32,7 +32,7 @@ defmodule DynamicConfigInvokedTest do
   end
 
   test "read config based on invoked resolution" do
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
 
     # "result"
     assert "result" == Application.get_env(:dynamic_config, :func)

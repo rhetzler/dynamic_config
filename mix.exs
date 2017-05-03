@@ -15,7 +15,17 @@ defmodule DynamicConfig.Mixfile do
   # Type "mix help compile.app" for more information
   def application do
     # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger]]
+    [
+      mod: {DynamicConfig, []},
+      extra_applications: [:logger],
+      start_phases: [dynamic_config: []],
+      env: [
+        sample1: {DynamicConfig.Env, :TERM},
+        sample2: {DynamicConfig.Quoted, quote do: System.get_env("TERM")}
+        #sample3: {DynamicConfig.Invoked, &DynamicConfig.Mixfile.project/0 }
+        #sample3: {DynamicConfig.Invoked, { &System.get_env/1 , "TERM" } }
+      ]
+    ]
   end
 
   # Dependencies can be Hex packages:

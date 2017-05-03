@@ -14,7 +14,7 @@ defmodule DynamicConfigEnvTest do
   end
 
   test "read config based on env vars" do
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
     assert System.get_env("USER") == Application.get_env(:dynamic_config, :user)
     assert System.get_env("PWD") == Application.get_env(:dynamic_config, :current_dir)
     #IO.puts(System.get_env("USER"))

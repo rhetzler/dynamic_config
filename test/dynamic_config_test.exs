@@ -45,7 +45,7 @@ defmodule DynamicConfigTest do
   end
 
   test "read nullary config with preprocessing" do
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
     assert [boot_time: %Time{}] = Application.get_env(:dynamic_config, :my_single)
   end
 
@@ -54,7 +54,7 @@ defmodule DynamicConfigTest do
     old = "tcp://old:4000"
     System.put_env("NEW_PORT", new)
     System.put_env("OLD_PORT", old)
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
     assert [service_url: ^new] = Application.get_env(:dynamic_config, :my_tuple)
     assert [service_url: ^old] = Application.get_env(:dynamic_config, :my_other_tuple)
   end
@@ -65,7 +65,7 @@ defmodule DynamicConfigTest do
   end
 
   test "read keywords with preprocessing" do
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
     assert :bar == Application.get_env(:dynamic_config, :my_keywords)[:foo]
     assert :there == Application.get_env(:dynamic_config, :my_keywords)[:hello]
   end

@@ -30,7 +30,7 @@ defmodule DynamicConfigQuotedTest do
   end
 
   test "read config based on quote resolution" do
-    DynamicConfig.dynamically_update_config()
+    DynamicConfig.Service.dynamically_update_config
 
     # "test"
     assert "test" == Application.get_env(:dynamic_config, :string)
