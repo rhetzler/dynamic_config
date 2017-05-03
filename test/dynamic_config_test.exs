@@ -13,6 +13,13 @@ defmodule UnaryConfig do
   end
 end
 
+defmodule KeywordConfig do
+  @behaviour DynamicConfig
+  def get_config(keywords) do
+    keywords |> Keyword.merge(hello: :there)
+  end
+end
+
 
 defmodule DynamicConfigTest do
   use ExUnit.Case
@@ -23,6 +30,7 @@ defmodule DynamicConfigTest do
     Application.put_env(:dynamic_config, :my_single, NullaryConfig)
     Application.put_env(:dynamic_config, :my_tuple, {UnaryConfig, :NEW})
     Application.put_env(:dynamic_config, :my_other_tuple, {UnaryConfig, :OLD})
+    Application.put_env(:dynamic_config, :my_keywords, foo: :bar, dynamic_config: KeywordConfig)
   end
 
   # control
@@ -51,4 +59,14 @@ defmodule DynamicConfigTest do
     assert [service_url: ^old] = Application.get_env(:dynamic_config, :my_other_tuple)
   end
 
+  test "read keywords without preprocessing" do
+    assert :bar == Application.get_env(:dynamic_config, :my_keywords)[:foo]
+    refute Keyword.has_key?(Application.get_env(:dynamic_config, :my_keywords), :hello)
+  end
+
+  test "read keywords with preprocessing" do
+    DynamicConfig.dynamically_update_config()
+    assert :bar == Application.get_env(:dynamic_config, :my_keywords)[:foo]
+    assert :there == Application.get_env(:dynamic_config, :my_keywords)[:hello]
+  end
 end

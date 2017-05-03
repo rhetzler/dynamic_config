@@ -58,6 +58,26 @@ defmodule DynamicConfig do
   end
   ```
 
+  a dynamic configuration can take on any of the following three forms:
+
+  ```
+  config :my_app, :my_key1, MyDynamicConfigModule
+
+  config :my_app, :my_key2, {MyDynamicConfigModule, args}
+
+  config :my_app, :my_key3, key1: value1,
+    key2: value2,
+    dynamic_config: MyDynamicConfigModule
+  ```
+
+  In all cases, we expect a module with the DynamicConfig behaviour (ie, implements get_config/1)
+
+  The first form assumes no arguments are necessary and will pass nil as the argument
+  The second form, passes in a (single) "any" value as specified by args. this can be a map, keyword list, string, or whatever you want
+
+  The third form is not recommended but is included to support configs that mix environment concerns with compile-time concerns
+  (cough, Ecto), such as compile-time loading of adapter libraries. In the third case, the whole keyword list is passed in to args.
+
   """
 
   @doc """
@@ -88,6 +108,21 @@ defmodule DynamicConfig do
         {:ok, mod.get_config(args)}
     else
         :static
+    end
+  end
+
+  # just in case we're Ecto and mix legit compile-time configs with dynamic configs,
+  # add the option to specify keyword list key `dynamic_config` to point to the module
+  # the existing keyword list will be passed in as the argument
+  defp maybe_get_dynamic_config(keywords) when is_list(keywords) do
+    if Keyword.keyword?(keywords) do
+      if Keyword.has_key?(keywords, :dynamic_config) do
+        {:ok, keywords[:dynamic_config].get_config(keywords)}
+      else
+        :static
+      end
+    else
+      :static
     end
   end
 
