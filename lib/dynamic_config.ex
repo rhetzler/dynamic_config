@@ -8,9 +8,9 @@ defmodule DynamicConfig do
   where the application is expected to get it's configuration from the environment it runs in, rather than
   at compile time.
 
-  Distillery's REPLACE_OS_VARS parameter and it's predecessors make some attempt to serve the need, but
-  it is inherently limited to what is available in the execution runtime's ENV variables, is OS-specific,
-  and uses OS tools to make local edits to a compiled file (mix.config)
+  Distillery's REPLACE_OS_VARS parameter and it's predecessors (RELX_REPLACE_OS_VARS) make some attempt
+  to serve the need, but it is inherently limited to what is available in the execution runtime's ENV
+  variables, is OS-specific, and uses OS tools to make local edits to a compiled file (mix.config)
 
   One solution put forth is to have library developers provide on_init hooks. This pushes a concern which
   really ought to be handled by the framework as a burden to library developers who may or may not choose
@@ -25,7 +25,8 @@ defmodule DynamicConfig do
   the first invocation, the DynamicConfig annotations in the configuration will be replaced by their
   resolved values and thus cannot be re-evaluated.
 
-  Boot-time configuration (makes use of boot phases)
+  Boot-time configuration (makes use of boot phases) - this depends on your boot order, and whether the
+  configs you're trying to affect are loaded before your app's boot or after (application vs included_application)
 
   in mix.exs:
   ```
@@ -33,6 +34,7 @@ defmodule DynamicConfig do
     [ {:dynamic_config, "~> 0.1.0" } ]
   end
 
+  # if you already have start_phases, add to the list rather than replacing, of course.
   def application do
     [
        ...
@@ -49,11 +51,8 @@ defmodule DynamicConfig do
 
     ...
 
-    def start_phase(phase, _, _) do
-      case phase do
-        :dynamic_config ->
-          DynamicConfig.dynamically_update_config()
-      end
+    def start_phase(:dynamic_config, _, _) do
+      DynamicConfig.dynamically_update_config()
     end
   end
   ```
