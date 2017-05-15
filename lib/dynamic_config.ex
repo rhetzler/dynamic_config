@@ -1,5 +1,5 @@
 defmodule DynamicConfig do
-  use DynamicConfig.BootPhase, skip_bootstrap: true
+  use DynamicConfig.BootPhase, skip_service_bootstrap: true, boot_modules: Application.get_env(:dynamic_config, :boot_modules)
 
   @callback get_config(any) :: any
 

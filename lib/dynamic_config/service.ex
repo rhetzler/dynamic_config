@@ -11,7 +11,10 @@ defmodule DynamicConfig.Service do
   end
 
   def dynamically_update_config do
-    GenServer.call(__MODULE__, {:dynamically_update_config})
+    GenServer.call(__MODULE__, {:dynamically_update_config, nil})
+  end
+  def dynamically_update_config(modules) do
+    GenServer.call(__MODULE__, {:dynamically_update_config, modules})
   end
 
   def get_env(app, key) do
@@ -19,10 +22,20 @@ defmodule DynamicConfig.Service do
   end
 
 
-  def handle_call({:dynamically_update_config}, _from, :ok) do
-    #app_list = Application.get_env(:dynamic_config, :load_applications)
-    app_list = Enum.map Application.loaded_applications(), fn {app, _, _ } -> app; end
+  # if no modules passed, update all discoverable apps
+  # short circuit out an empty list (no update desired)
+  # otherwise, update just the ones specified
+  def handle_call({:dynamically_update_config, nil}, _from, :ok) do
+    update_app_configs(Enum.map Application.loaded_applications(), fn {app, _, _ } -> app; end)
+  end
+  def handle_call({:dynamically_update_config, []}, _from, :ok) do
+    {:reply, :ok, :ok}
+  end
+  def handle_call({:dynamically_update_config, modules}, _from, :ok) when is_list(modules) do
+    update_app_configs(modules)
+  end
 
+  defp update_app_configs(app_list) do
     Enum.each app_list, fn app ->
       Enum.each Application.get_all_env(app), fn {k, v} ->
         case maybe_get_dynamic_config(v) do
@@ -35,6 +48,7 @@ defmodule DynamicConfig.Service do
     end
     {:reply, :ok, :ok}
   end
+
 
   def handle_call({:get_env, app, key}, _from, :ok ) do
     v = Application.get_env(app,key)

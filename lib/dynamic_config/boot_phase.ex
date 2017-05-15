@@ -6,17 +6,19 @@ defmodule DynamicConfig.BootPhase do
   """
 
   defmacro __using__(opts) do
-    quote bind_quoted: [opts: opts] do
-      def start_phase(:dynamic_config, _, _) do
-        if unquote(opts[:skip_bootstrap]) do
-          if Application.get_env(:dynamic_config, :no_boot_update) do
-            :ok
-          else
-            DynamicConfig.Service.dynamically_update_config
-          end
-        else
+    boot_modules = opts[:boot_modules]
+
+    if opts[:skip_service_bootstrap] do
+      quote do
+        def start_phase(:dynamic_config, _, _) do
+          DynamicConfig.Service.dynamically_update_config(unquote(boot_modules))
+        end
+      end
+    else
+      quote do
+        def start_phase(:dynamic_config, _, _) do
           {:ok, pid} = DynamicConfig.Supervisor.start_link
-          DynamicConfig.Service.dynamically_update_config
+          DynamicConfig.Service.dynamically_update_config(unquote(boot_modules))
           DynamicConfig.Supervisor.stop(pid)
         end
       end

@@ -20,6 +20,9 @@ defmodule DynamicConfig.Mixfile do
       extra_applications: [:logger],
       start_phases: [dynamic_config: []],
       env: [
+        boot_modules: nil,
+
+        # examples
         sample1: {DynamicConfig.Env, :TERM},
         sample2: {DynamicConfig.Quoted, quote do: System.get_env("TERM")}
         #sample3: {DynamicConfig.Invoked, &DynamicConfig.Mixfile.project/0 }
