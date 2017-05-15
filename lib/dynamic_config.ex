@@ -79,4 +79,8 @@ defmodule DynamicConfig do
   def start(_type, _args) do
     DynamicConfig.Supervisor.start_link
   end
+
+  def get_env(app, key) do
+    DynamicConfig.Service.get_env(app, key)
+  end
 end
