@@ -3,7 +3,7 @@ defmodule DynamicConfig.Mixfile do
 
   def project do
     [app: :dynamic_config,
-     version: "0.1.0",
+     version: "0.2.0",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -20,11 +20,13 @@ defmodule DynamicConfig.Mixfile do
       extra_applications: [:logger],
       start_phases: [dynamic_config: []],
       env: [
-        boot_modules: nil,
+        boot_modules: nil
 
         # examples
-        sample1: {DynamicConfig.Env, :TERM},
-        sample2: {DynamicConfig.Quoted, quote do: System.get_env("TERM")}
+        #sample1: {DynamicConfig.Env, :TERM},
+        #sample2: {DynamicConfig.Quoted, quote do: System.get_env("TERM")}
+
+        # working?
         #sample3: {DynamicConfig.Invoked, &DynamicConfig.Mixfile.project/0 }
         #sample3: {DynamicConfig.Invoked, { &System.get_env/1 , "TERM" } }
       ]
