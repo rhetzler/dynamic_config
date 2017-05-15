@@ -20,41 +20,12 @@ defmodule DynamicConfig do
 
   An ideal solution perhaps might be to have adoption of some sort of dynamic config mechanism which
   allows for dynamic fetch. Perhaps such a thing could wrap Application but otherwise provide the ability
-  to set callbacks.
+  to set callbacks. For backwards compatibility with libraries which do not or will not use such a mechanism,
+  a boot-time mechanism can update the configuration manifest which such libraries read from.
 
-  The initial implementation provides an idempotent DynamicConfig.dynamically_update_config() which is
-  suitable for one-time use during boot, to "mutate" the config to the values needed for runtime. After
-  the first invocation, the DynamicConfig annotations in the configuration will be replaced by their
-  resolved values and thus cannot be re-evaluated.
+  See the project's README.md for installation details with your app.
 
-  Boot-time configuration (makes use of boot phases) - this depends on your boot order, and whether the
-  configs you're trying to affect are loaded before your app's boot or after (application vs included_application)
-
-  in mix.exs:
-  ```
-  defp deps do
-    [ {:dynamic_config, "~> 0.1.0" } ]
-  end
-
-  # if you already have start_phases, add to the list rather than replacing, of course.
-  def application do
-    [
-       ...
-       start_phases: [dynamic_config: []]
-       ...
-    ]
-  end
-  ```
-
-  in your application module (ie, lib/my_app.ex)
-  ```
-  defmodule MyApp do
-    use Application
-    use DynamicConfig.BootPhase
-    ...
-  ```
-
-  a dynamic configuration can take on any of the following three forms:
+  A dynamic configuration can take on any of the following three forms:
 
   ```
   config :my_app, :my_key1, MyDynamicConfigModule
