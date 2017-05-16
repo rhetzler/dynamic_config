@@ -41,6 +41,9 @@ defmodule DynamicConfig.Service do
         case maybe_get_dynamic_config(v) do
           {:ok, new_config} ->
             Application.put_env(app, k, new_config)
+          {:error, error, dc_module} ->
+            troubleshooting_tips(app,k,v,dc_module, error)
+            raise error
           :static ->
             :noop
         end
@@ -55,6 +58,8 @@ defmodule DynamicConfig.Service do
     case maybe_get_dynamic_config(v) do
       {:ok, new_config} ->
         {:reply, new_config, :ok}
+      {:error, error, _} ->
+        raise error
       :static ->
         {:reply, v, :ok}
     end
@@ -65,9 +70,9 @@ defmodule DynamicConfig.Service do
   #
   defp maybe_get_dynamic_config({mod, args}) when is_atom(mod) do
     if :erlang.function_exported(mod, :get_config, 1) do
-        {:ok, mod.get_config(args)}
+      get_config_from_module(mod, args)
     else
-        :static
+      :static
     end
   end
 
@@ -77,7 +82,7 @@ defmodule DynamicConfig.Service do
   defp maybe_get_dynamic_config(keywords) when is_list(keywords) do
     if Keyword.keyword?(keywords) do
       if Keyword.has_key?(keywords, :dynamic_config) do
-        {:ok, keywords[:dynamic_config].get_config(keywords)}
+        get_config_from_module(keywords[:dynamic_config], keywords)
       else
         :static
       end
@@ -88,13 +93,43 @@ defmodule DynamicConfig.Service do
 
   defp maybe_get_dynamic_config(mod) when is_atom(mod) do
     if :erlang.function_exported(mod, :get_config, 1) do
-        {:ok, mod.get_config(nil)}
+      get_config_from_module(mod, nil)
     else
-        :static
+      :static
     end
   end
 
   defp maybe_get_dynamic_config(_) do
     :static
   end
+
+  defp get_config_from_module(module, args) do
+    try do
+      result = module.get_config(args)
+      {:ok, result}
+    rescue
+      error ->
+       {:error, error, module}
+    end
+  end
+
+  defp troubleshooting_tips(app, key, value, dc_module, error) do
+    IO.puts("=============================================================================")
+    IO.puts("| Your Application's DynamicConfig could not be resolved")
+    IO.puts("| This will result in boot failure")
+    IO.puts("| Error handling in in your config loader will prevent this sort of failure")
+    IO.puts("=============================================================================")
+    IO.puts("| faulty config:")
+    IO.puts("|     #{app} : #{key}")
+    IO.puts("|")
+    IO.puts("|     handled by: #{dc_module}")
+    IO.puts("|")
+    IO.puts("")
+    IO.inspect(error)
+    IO.puts("")
+    IO.puts("|")
+    IO.puts("=============================================================================")
+
+  end
+
 end
