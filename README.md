@@ -4,6 +4,9 @@
 
 DynamicConfig is an elixir library aimed to support a configuration which can be evaluated at boot-time or run-time (rather than strictly compile-time). This can be applied to any configuration, without requiring changes to the calling libraries, such as re-writing a library to support {:system, :variable_name}
 
+To be clear: It is *technically* true that you can do run-time reconfiguration (ie, this library utilizes that capability), the tooling for early reconfiguration is mostly figure-it-out-for-yourself-and-customize-your-boot-process. This lib aims to provide some reusable patterns.
+
+
 ## Example:
 
 ```
@@ -18,6 +21,13 @@ config :my_app, :my_key3, {DynamicConfig.Quoted, quote do: Discovery.get('db_uri
 config :my_app, MyApp.Repo, adapter: "foo", # adapter required at compile-time
                             dynamic_config: MyApp.DynamicEctoConfigAndSecrets
 ```
+
+Mix:
+
+```
+mix do dynamic_config, ecto.migrate
+```
+
 (See Use below for more cases)
 
 
@@ -50,9 +60,9 @@ Previously, we had a bash implementation of REPLACE\_OS\_VARS parameter and it's
 DynamicConfig provides a solution to this in 2 modes:
 
 * *Boot Time:* Elixir boot-time configuration refresh
-* *Run Time:* Implementation of Dynamic Configuration lookup
+* *Run Time:* Dynamic Configuration lookup based on configurable hooks
 
-Note that unlike other tools such as Confex which similarly supply runtime lookup, this is not restricted to environment variables, and simultaneously allows boot-time updates for modules which aready follow the Application.get_env pattern.
+Note that unlike other tools such as Confex which similarly supply runtime lookup, this is not restricted to environment variables, and simultaneously simplifies boot-time updates for modules which aready follow the Application.get_env pattern.
 
 
 ## Installation
@@ -62,7 +72,7 @@ by adding `dynamic_config` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:dynamic_config, "~> 0.2.1"}]
+  [{:dynamic_config, "~> 0.3.0"}]
 end
 ```
 
@@ -122,9 +132,26 @@ defmodule MyApp do
   ...
 ```
 
+### Method 4: Mix invocation
+
+When invoking mix to launch a process, prefix it with the dynamic_config task to ensure that it can perform it's config refresh:
+
+Before:
+
+```sh
+mix some.config.based.task
+```
+
+After:
+
+```sh
+mix do dynamic_config, some.config.based.task
+```
+
+
 ### Additional configuration
 
-In any of the 3 methods, if you wish to restrict or enable boot time reconfiguration for a subset of available applications (only *some* modules), you can do this via the :boot_modules configuration parameter:
+If you wish to restrict or enable boot time reconfiguration for a subset of available applications (only *some* modules), you can do this via the :boot_modules configuration parameter:
 
 ```
 config :dynamic_config, :boot_modules, [:app1, :app2]
@@ -213,4 +240,22 @@ defmodule MyApp.DbConfig do
     ])
   end
 end  
+```
+
+Technically this feature could be rendered unnecessary by using ```mix do dynamic_config, compile``` and such (see below) but practically speaking, that would be a pain in the ass for everyone (bundle exec, anyone?).
+
+## Use with mix
+
+Since DynamicConfig is made possible by performing changes early in the application startup cycle, it does not automatically work in contexts that do not involve your application booting. The most obvious example (for me, anyway) is ecto.migrate and similar. Utilizing the "do" mix task, you can launch multiple tasks. I've provided a "dynamic_config" convenience task which bootstraps the mix runtime context. This behaves similarly in principle to ```bundle exec``` and bootstraps the correct config.
+
+Before:
+
+```sh
+mix some.task
+```
+
+After:
+
+```sh
+mix do dynamic_config, some.task
 ```

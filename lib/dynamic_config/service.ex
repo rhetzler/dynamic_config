@@ -35,6 +35,20 @@ defmodule DynamicConfig.Service do
     update_app_configs(modules)
   end
 
+  def handle_call({:get_env, app, key}, _from, :ok ) do
+    v = Application.get_env(app,key)
+    case maybe_get_dynamic_config(v) do
+      {:ok, new_config} ->
+        {:reply, new_config, :ok}
+      {:error, error, _} ->
+        raise error
+      :static ->
+        {:reply, v, :ok}
+    end
+  end
+
+
+
   defp update_app_configs(app_list) do
     Enum.each app_list, fn app ->
       Enum.each Application.get_all_env(app), fn {k, v} ->
@@ -53,54 +67,40 @@ defmodule DynamicConfig.Service do
   end
 
 
-  def handle_call({:get_env, app, key}, _from, :ok ) do
-    v = Application.get_env(app,key)
-    case maybe_get_dynamic_config(v) do
-      {:ok, new_config} ->
-        {:reply, new_config, :ok}
-      {:error, error, _} ->
-        raise error
-      :static ->
-        {:reply, v, :ok}
-    end
-  end
+
 
   #
   # Handle a value
   #
   defp maybe_get_dynamic_config({mod, args}) when is_atom(mod) do
-    if :erlang.function_exported(mod, :get_config, 1) do
-      get_config_from_module(mod, args)
-    else
-      :static
-    end
+    maybe_invoke_module(mod, args)
   end
 
   # just in case we're Ecto and mix legit compile-time configs with dynamic configs,
   # add the option to specify keyword list key `dynamic_config` to point to the module
   # the existing keyword list will be passed in as the argument
   defp maybe_get_dynamic_config(keywords) when is_list(keywords) do
-    if Keyword.keyword?(keywords) do
-      if Keyword.has_key?(keywords, :dynamic_config) do
-        get_config_from_module(keywords[:dynamic_config], keywords)
-      else
-        :static
-      end
+    if keywords |> Keyword.keyword? and keywords |> Keyword.has_key?(:dynamic_config) do
+      maybe_invoke_module(keywords[:dynamic_config], keywords)
     else
       :static
     end
   end
 
   defp maybe_get_dynamic_config(mod) when is_atom(mod) do
-    if :erlang.function_exported(mod, :get_config, 1) do
-      get_config_from_module(mod, nil)
-    else
-      :static
-    end
+    maybe_invoke_module(mod, nil)
   end
 
   defp maybe_get_dynamic_config(_) do
     :static
+  end
+
+  defp maybe_invoke_module(module, args) do
+    if Code.ensure_loaded?(module) and :erlang.function_exported(module, :get_config, 1) do
+      get_config_from_module(module, args)
+    else
+      :static
+    end
   end
 
   defp get_config_from_module(module, args) do
@@ -113,7 +113,7 @@ defmodule DynamicConfig.Service do
     end
   end
 
-  defp troubleshooting_tips(app, key, value, dc_module, error) do
+  defp troubleshooting_tips(app, key, _value, dc_module, error) do
     IO.puts("=============================================================================")
     IO.puts("| Your Application's DynamicConfig could not be resolved")
     IO.puts("| This will result in boot failure")
