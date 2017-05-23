@@ -72,7 +72,7 @@ by adding `dynamic_config` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
-  [{:dynamic_config, "~> 0.3.0"}]
+  [{:dynamic_config, "~> 0.3.1"}]
 end
 ```
 
