@@ -125,6 +125,9 @@ defmodule DynamicConfig.Service do
     if Code.ensure_loaded?(module) and :erlang.function_exported(module, :get_config, 1) do
       get_config_from_module(module, args)
     else
+      if Regex.match?(~r/Elixir\./,Atom.to_string(module)) do
+        IO.puts("Warning: DynamicConfig was not able to load possible module reference: #{module}")
+      end
       :static
     end
   end
