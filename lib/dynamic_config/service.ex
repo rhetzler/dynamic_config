@@ -22,11 +22,11 @@ defmodule DynamicConfig.Service do
   end
 
 
-  # if no modules passed, update all discoverable apps
-  # short circuit out an empty list (no update desired)
-  # otherwise, update just the ones specified
+  # - if no modules passed, pull module list from implicit_modules (see below)
+  # - short circuit out an empty list (no update desired)
+  # - otherwise, update just the ones specified
   def handle_call({:dynamically_update_config, nil}, _from, :ok) do
-    update_app_configs(Enum.map Application.loaded_applications(), fn {app, _, _ } -> app; end)
+    update_app_configs( implicit_modules(Application.get_env(:dynamic_config, :implicit_sources)) )
   end
   def handle_call({:dynamically_update_config, []}, _from, :ok) do
     {:reply, :ok, :ok}
@@ -45,6 +45,32 @@ defmodule DynamicConfig.Service do
       :static ->
         {:reply, v, :ok}
     end
+  end
+
+  # Implicit modules: get modules implicitly associated with project
+  #  necessary since Application does not expose a global list of configured modules
+  #    (only modules which have been loaded by time of invocation)
+  #  - :loaded_applications : Application.loaded_applications
+  #  - :project_dependencies : Mix.Project.config[:deps]
+  #  - :project_app :
+  #    which makes this more difficult
+  #
+  # list of modules subject to dynamic config, when no explicit list of modules has been provided
+  defp implicit_modules(sources) do
+    List.flatten(
+      Enum.map sources, fn source ->
+        case source do
+          :loaded_applications ->
+            Enum.map Application.loaded_applications(), fn {app, _, _ } -> app; end
+          :project_dependencies ->
+            Enum.map Mix.Project.config[:deps], fn {app, _} -> app; {app, _, _} -> app end
+          :project_app ->
+            [ Mix.Project.config[:app] ]
+          _ ->
+           []
+        end
+      end
+    )
   end
 
 

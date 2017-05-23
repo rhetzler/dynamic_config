@@ -20,6 +20,9 @@ defmodule Mix.Tasks.DynamicConfig do
   # The boot phase does the magic.
   @doc false
   defp bootstrap() do
+    # loadpaths is necessary to ensure that, in the event your application hasn't been loaded yet
+    #  the modules which provide DynamicConfig functionality are available
+    Mix.Task.run "loadpaths"
     Application.ensure_started(:dynamic_config)
   end
 

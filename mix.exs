@@ -20,15 +20,19 @@ defmodule DynamicConfig.Mixfile do
       extra_applications: [:logger],
       start_phases: [dynamic_config: []],
       env: [
-        boot_modules: nil
+        # an explicit list of erlang apps to apply dynamic config to
+        #  eg [ :my_app ]
+        #   [] will result in no dynamic config applied at boot
+        #   nil will result in modules detected implicitly from sources (see below)
+        boot_modules: nil,
 
-        # examples
-        #sample1: {DynamicConfig.Env, :TERM},
-        #sample2: {DynamicConfig.Quoted, quote do: System.get_env("TERM")}
-
-        # working?
-        #sample3: {DynamicConfig.Invoked, &DynamicConfig.Mixfile.project/0 }
-        #sample3: {DynamicConfig.Invoked, { &System.get_env/1 , "TERM" } }
+        # implicit_sources used when no boot_modules have been specified
+        #  the purpose here is to enable most use cases to "just work" out of the box
+        #
+        #  :loaded_applications  -> Application.loaded_applications
+        #  :project_app          -> Mix.Project.config[:app]
+        #  :project_dependencies -> Mix.Project.config[:deps]
+        implicit_sources: [:loaded_applications, :project_app, :project_dependencies]
       ]
     ]
   end
