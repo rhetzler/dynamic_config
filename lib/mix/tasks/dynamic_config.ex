@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.DynamicConfig do
   use Mix.Task
 
-  @shortdoc "Bootstrap DynamicConfig for use with other tasks"
+  @shortdoc "Bootstrap DynamicConfig (mix do dynamic_config, other.tasks)"
 
 
   # @TODO add parameters to target specific applications for dynamic config bootstrap
