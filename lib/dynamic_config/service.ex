@@ -56,23 +56,12 @@ defmodule DynamicConfig.Service do
   #    which makes this more difficult
   #
   # list of modules subject to dynamic config, when no explicit list of modules has been provided
-  defp implicit_modules(sources) do
-    List.flatten(
-      Enum.map sources, fn source ->
-        case source do
-          :loaded_applications ->
-            Enum.map Application.loaded_applications(), fn {app, _, _ } -> app; end
-          :project_dependencies ->
-            Enum.map Mix.Project.config[:deps], fn {app, _} -> app; {app, _, _} -> app end
-          :project_app ->
-            [ Mix.Project.config[:app] ]
-          _ ->
-           []
-        end
-      end
-    )
-  end
+  def implicit_modules(sources), do: Enum.flat_map(sources, &modules_from_source/1)
 
+  defp modules_from_source(:loaded_applications), do:  Enum.map(Application.loaded_applications(), &elem(&1,0))  # {module, _, _ }
+  defp modules_from_source(:project_dependencies), do: Enum.map(Mix.Project.config[:deps], &elem(&1,0)) # {module, _ }  or  {module, _, _ }
+  defp modules_from_source(:project_app), do:         [ Mix.Project.config[:app] ]
+  defp modules_from_source(_), do:                    []
 
 
   defp update_app_configs(app_list) do
