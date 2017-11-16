@@ -81,8 +81,8 @@ defmodule DynamicConfig.Service do
         case maybe_get_dynamic_config(v) do
           {:ok, new_config} ->
             Application.put_env(app, k, new_config)
-          {:error, error, dc_module} ->
-            troubleshooting_tips(app,k,v,dc_module, error)
+          {:error, error, dc_module, stacktrace} ->
+            troubleshooting_tips(app,k,v,dc_module, error, stacktrace)
             raise error
           :static ->
             :noop
@@ -138,15 +138,15 @@ defmodule DynamicConfig.Service do
       {:ok, result}
     rescue
       error ->
-       {:error, error, module}
+       {:error, error, module, System.stacktrace}
     end
   end
 
-  defp troubleshooting_tips(app, key, _value, dc_module, error) do
+  defp troubleshooting_tips(app, key, _value, dc_module, error, stacktrace) do
     IO.puts("=============================================================================")
     IO.puts("| Your Application's DynamicConfig could not be resolved")
     IO.puts("| This will result in boot failure")
-    IO.puts("| Error handling in in your config loader will prevent this sort of failure")
+    IO.puts("| Error handling in in your config loader may prevent this sort of failure")
     IO.puts("=============================================================================")
     IO.puts("| faulty config:")
     IO.puts("|     #{app} : #{key}")
@@ -156,6 +156,10 @@ defmodule DynamicConfig.Service do
     IO.puts("")
     IO.inspect(error)
     IO.puts("")
+    IO.puts("|")
+    IO.puts("| Stacktrace: ")
+    IO.puts("|")
+    IO.inspect(stacktrace)
     IO.puts("|")
     IO.puts("=============================================================================")
 
