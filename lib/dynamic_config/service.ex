@@ -80,7 +80,8 @@ defmodule DynamicConfig.Service do
       Enum.each Application.get_all_env(app), fn {k, v} ->
         case maybe_get_dynamic_config(v) do
           {:ok, new_config} ->
-            Application.put_env(app, k, new_config)
+            #IO.puts("Dynamic config setting {#{app},#{k},#{inspect new_config}}")
+            Application.put_env(app, k, new_config, persistent: true)  #persistent:true secures this from getting reset during an Application.ensure_all_started
           {:error, error, dc_module, stacktrace} ->
             troubleshooting_tips(app,k,v,dc_module, error, stacktrace)
             raise error
@@ -123,6 +124,7 @@ defmodule DynamicConfig.Service do
 
   defp maybe_invoke_module(module, args) do
     if Code.ensure_loaded?(module) and :erlang.function_exported(module, :get_config, 1) do
+      #IO.puts("Dynamic Config loading following module: #{module}")
       get_config_from_module(module, args)
     else
       if Regex.match?(~r/Elixir\./,Atom.to_string(module)) do
